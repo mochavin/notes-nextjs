@@ -59,43 +59,45 @@ const Folders = ({
 
   return (
     <div className="flex flex-col">
-      {[1, 2, 3].map((item, index) => {
-        const [isAccordionOpened, setIsAccordionOpened] = useState(false)
-        const [isInputOpened, setIsInputOpened] = useState(false)
-        return (
-          <div className={`hover:bg-slate-100 transition-all p-2 rounded-md pr-4 pl-8 ${!isOpened && 'opacity-0 w-0 hidden'}`} key={index}>
-            <div className="flex justify-between">
-              <div className="opacity-50 font-medium">Folders {item}</div>
-              <div className="flex gap-1">
-                <div className="h-4 w-4 relative z-20"
-                  onClick={() => setIsInputOpened(!isInputOpened)}
-                >
-                  <Image src={'/icons/plus.svg'} alt="plus" className="cursor-pointer" fill />
-                </div>
-                <div className="h-4 w-4 relative"
-                  onClick={() => setIsAccordionOpened(!isAccordionOpened)}
-                >
-                  <Image src={'/icons/accordion.svg'} alt="accordion" className={`cursor-pointer transition-all duration-300 ${!isAccordionOpened ? 'rotate-90' : 'rotate-180'}`} fill />
-                </div>
-              </div>
-            </div>
-            <ContentFolders isAccordionOpened={isAccordionOpened} />
-            <div className={`${!isInputOpened && 'hidden'} relative`}>
-              <div className="absolute top-[10px] left-2 flex items-center pl-2 w-4 h-4 opacity-40">
-                <Image src={'/icons/plus.svg'} alt="plus" className="cursor-pointer" fill
-                  onClick={handleNewFolder}
-                />
-              </div>
-              <input type="text" placeholder="New Folder" className='border text-sm p-2 px-8'
-                onChange={(e) => setInputValue(e.target.value)}
-                value={inputValue}
-                onKeyDown={handleKeyDown}
-              />
-            </div>
-          </div>
-        )
-      })}
+      {[1, 2, 3].map((item, index) =>
+        <div key={index}>
+          <Folder item={item} index={index} />
+        </div>
+      )}
     </div>)
+}
+
+function Folder({ item, index }: { item: number; index: number }) {
+  const [isAccordionOpened, setIsAccordionOpened] = useState(false)
+  const [isInputOpened, setIsInputOpened] = useState(false)
+  return (
+    <div className={`hover:bg-slate-100 transition-all p-2 rounded-md pr-4 pl-8`} key={index}>
+      <div className="flex justify-between">
+        <div className="opacity-50 font-medium">Folders {item}</div>
+        <div className="flex gap-1">
+          <div className="h-4 w-4 relative z-20"
+            onClick={() => setIsInputOpened(!isInputOpened)}
+          >
+            <Image src={'/icons/plus.svg'} alt="plus" className="cursor-pointer" fill />
+          </div>
+          <div className="h-4 w-4 relative"
+            onClick={() => setIsAccordionOpened(!isAccordionOpened)}
+          >
+            <Image src={'/icons/accordion.svg'} alt="accordion" className={`cursor-pointer transition-all duration-300 ${!isAccordionOpened ? 'rotate-90' : 'rotate-180'}`} fill />
+          </div>
+        </div>
+      </div>
+      <ContentFolders isAccordionOpened={isAccordionOpened} />
+      <div className={`${!isInputOpened && 'hidden'} relative`}>
+        <div className="absolute top-[10px] left-2 flex items-center pl-2 w-4 h-4 opacity-40">
+          <Image src={'/icons/plus.svg'} alt="plus" className="cursor-pointer" fill
+            onClick={() => console.log('new folder')}
+          />
+        </div>
+        <input type="text" placeholder="New Folder" className='border text-sm p-2 px-8' />
+      </div>
+    </div>
+  )
 }
 
 async function getData(angka: number) {
