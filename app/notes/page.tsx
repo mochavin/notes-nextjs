@@ -26,7 +26,7 @@ function Save() {
       <div className="absolute right-36 bottom-12 cursor-pointer">
         <div className="w-24 border bg-slate-600 p-2 flex gap-3 rounded-lg">
           <div className="w-5 h-5 relative">
-          <Image src={'/icons/save.svg'} fill alt="save" />
+          <Image src={'./icons/save.svg'} fill alt="save" />
           </div>
           <p className="text-white text-center opacity-80">Save</p>
         </div>

@@ -32,7 +32,7 @@ const Slider = ({ isOpened, setIsOpened }: {
     <div className="absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 cursor-pointer"
       onClick={() => setIsOpened(!isOpened)}>
       <div className="bg-slate-200 rounded-full p-2 w-8 h-8 flex items-center">
-        <Image src={'/icons/accordion.svg'} height={17} width={17} alt="accordion" className={`transform ${isOpened ? '-rotate-90' : 'rotate-90'} transition-all`} />
+        <Image src={'./icons/accordion.svg'} height={17} width={17} alt="accordion" className={`transform ${isOpened ? '-rotate-90' : 'rotate-90'} transition-all`} />
       </div>
     </div>
   )
@@ -78,19 +78,19 @@ function Folder({ item, index }: { item: number; index: number }) {
           <div className="h-4 w-4 relative z-20"
             onClick={() => setIsInputOpened(!isInputOpened)}
           >
-            <Image src={'/icons/plus.svg'} alt="plus" className="cursor-pointer" fill />
+            <Image src={'./icons/plus.svg'} alt="plus" className="cursor-pointer" fill />
           </div>
           <div className="h-4 w-4 relative"
             onClick={() => setIsAccordionOpened(!isAccordionOpened)}
           >
-            <Image src={'/icons/accordion.svg'} alt="accordion" className={`cursor-pointer transition-all duration-300 ${!isAccordionOpened ? 'rotate-90' : 'rotate-180'}`} fill />
+            <Image src={'./icons/accordion.svg'} alt="accordion" className={`cursor-pointer transition-all duration-300 ${!isAccordionOpened ? 'rotate-90' : 'rotate-180'}`} fill />
           </div>
         </div>
       </div>
       <ContentFolders isAccordionOpened={isAccordionOpened} />
       <div className={`${!isInputOpened && 'hidden'} relative`}>
         <div className="absolute top-[10px] left-2 flex items-center pl-2 w-4 h-4 opacity-40">
-          <Image src={'/icons/plus.svg'} alt="plus" className="cursor-pointer" fill
+          <Image src={'./icons/plus.svg'} alt="plus" className="cursor-pointer" fill
             onClick={() => console.log('new folder')}
           />
         </div>
@@ -125,10 +125,10 @@ const ContentFolders = ({
           <p>Isi Folder {item}</p>
           <div className="flex gap-2 relative">
             <div className="w-4 h-4 relative">
-              <Image src={'/icons/edit.svg'} alt="edit" className="cursor-pointer opacity-40" fill />
+              <Image src={'./icons/edit.svg'} alt="edit" className="cursor-pointer opacity-40" fill />
             </div>
             <div className="w-4 h-4 relative">
-              <Image src={'/icons/trash.svg'} alt="trash" className="cursor-pointer" fill />
+              <Image src={'./icons/trash.svg'} alt="trash" className="cursor-pointer" fill />
             </div>
           </div>
         </div>
@@ -157,7 +157,7 @@ const InputNewPage = ({
   return (
     <div className={`relative mx-8 ${!isOpened && 'hidden'}`}>
       <div className="absolute top-[10px] left-2 flex items-center pl-2 w-4 h-4 opacity-40">
-        <Image src={'/icons/plus.svg'} alt="plus" className="cursor-pointer" fill
+        <Image src={'./icons/plus.svg'} alt="plus" className="cursor-pointer" fill
           onClick={handleNewPage}
         />
       </div>
