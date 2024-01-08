@@ -2,12 +2,15 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "./firebase";
 
 export default function Home() {
   const router = useRouter()
   const [inputValue, setInputValue] = useState('')
   // handle create folder
   const handleCreateFolder = () => {
+    addFolder()
     router.push(`/notes`)
   }
 
@@ -16,6 +19,14 @@ export default function Home() {
     if (e.key === 'Enter') {
       handleCreateFolder()
     }
+  }
+
+  // add new folder to firestore
+  const addFolder = async () => {
+    const docRef = await addDoc(collection(db, "folders"), {
+      name: inputValue,
+      createdAt: new Date(),
+    });
   }
 
 
