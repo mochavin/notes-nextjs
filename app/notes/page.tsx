@@ -22,19 +22,13 @@ export default function Notes() {
 }
 
 function Save() {
-  const { idContent, title, subtitle, content, currentNote } = useContentStore()
+  const { currentNote } = useContentStore()
   const [triggerToast, setTriggerToast] = useState(false)
 
   const handleSave = async () => {
-    const docRef = doc(db, 'notes', idContent)
-    let temp = {
-      ...currentNote,
-      title: title,
-      subtitle: subtitle,
-      content: content,
-    }
-
-    await updateDoc(docRef, temp)
+    const docRef = doc(db, 'notes', currentNote.id)
+    await updateDoc(docRef, { ...currentNote })
+    console.log('current Note Save', currentNote)
     setTriggerToast(true)
     setTimeout(() => {
       setTriggerToast(false)

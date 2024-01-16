@@ -16,47 +16,54 @@ import {
   where,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useStateStore } from '../state/useStateStore';
+
+interface Folder {
+  name: string;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+  id: string;
+}
+
+interface Note {
+  id: string;
+  title: string;
+  idNote: string;
+  content: string;
+  displayTitle: string;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+  subtitle: string;
+}
 
 export default function Sidebar() {
-  const [isOpened, setIsOpened] = useState(true);
-  const [dataFolder, setDataFolder] = useState<any>([]);
-  useEffect(() => {
-    const q = query(collection(db, 'folders'));
-    onSnapshot(q, (querySnapshot) => {
-      let temp: any = [];
-      querySnapshot.forEach((doc) => {
-        temp.push({ ...doc.data(), id: doc.id });
-      });
-      setDataFolder(temp);
-    });
-  }, []);
+  const { isSidebarOpen } = useStateStore();
 
   return (
     <div
-      className={`relative border gap-2 border-r-2 flex h-screen min-h-screen flex-col pt-24 transition-all duration-500 z-10 ${isOpened ? 'w-1/3' : 'w-0 px-2'
+      className={`relative border gap-2 border-r-2 flex h-screen min-h-screen flex-col pt-24 transition-all duration-500 z-10 ${isSidebarOpen ? 'w-1/3' : 'w-0 px-2'
         } `}
     >
-      {isOpened && <div className='absolute left-8 top-12 font-bold text-3xl z-50'>
+      {isSidebarOpen && <div className='absolute left-8 top-12 font-bold text-3xl z-50'>
         <Link href={`/`}>Notes</Link>
       </div>}
-      <Folders isOpened={isOpened} data={dataFolder} />
-      <InputNewPage isOpened={isOpened} />
-      <Slider isOpened={isOpened} setIsOpened={setIsOpened} />
+      <Folders />
+      <InputNewPage />
+      <Slider />
     </div>
   );
 }
 
-const Slider = ({
-  isOpened,
-  setIsOpened,
-}: {
-  isOpened: boolean;
-  setIsOpened: React.Dispatch<React.SetStateAction<boolean>>;
-}) => {
+const Slider = () => {
+  const { isSidebarOpen, toggleIsSidebarOpen } = useStateStore();
   return (
     <div
       className='absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 cursor-pointer'
-      onClick={() => setIsOpened(!isOpened)}
+      onClick={() => toggleIsSidebarOpen()}
     >
       <div className='bg-slate-200 rounded-full p-2 w-8 h-8 flex items-center'>
         <Image
@@ -64,7 +71,7 @@ const Slider = ({
           height={17}
           width={17}
           alt='accordion'
-          className={`transform ${isOpened ? '-rotate-90' : 'rotate-90'
+          className={`transform ${isSidebarOpen ? '-rotate-90' : 'rotate-90'
             } transition-all`}
         />
       </div>
@@ -72,86 +79,84 @@ const Slider = ({
   );
 };
 
-const Folders = ({ isOpened, data }: { isOpened: boolean; data: any }) => {
+const Folders = () => {
+  const { isSidebarOpen } = useStateStore();
+  const { dataFolder, setDataFolder } = useStateStore();
+
+  useEffect(() => {
+    const q = query(collection(db, 'folders'));
+    onSnapshot(q, (querySnapshot) => {
+      let folderData: Folder[] = [];
+      querySnapshot.forEach((doc) => {
+        let i: Folder = {
+          id: doc.id,
+          name: '',
+          createdAt: {
+            seconds: 0,
+            nanoseconds: 0
+          },
+          ...doc.data()
+        }
+        folderData.push(i);
+      });
+      console.log('folderData', folderData)
+      setDataFolder(folderData);
+    });
+  }, []);
+
   return (
     <div className='flex flex-col'>
-      {data.map((item: any, index: number) => (
+      {dataFolder?.map((folderItem: Folder, index: number) => (
         <div key={index}>
-          {isOpened && <Folder item={item} index={index} />}
+          {isSidebarOpen && <Folder folderItem={folderItem} />}
         </div>
       ))}
     </div>
   );
 };
 
-function Folder({ item, index }: { item: any; index: number }) {
+function Folder({ folderItem }: { folderItem: Folder; }) {
+  const [notesInFolder, setNotesInFolder] = useState<Note[]>([]);
   const [isAccordionOpened, setIsAccordionOpened] = useState(false);
   const [isInputOpened, setIsInputOpened] = useState(false);
-  const [inputFolder, setInputFolder] = useState('');
-  const [notesInFolder, setNotesInFolder] = useState<any>();
-  const [triggerToast, setTriggerToast] = useState(false)
+  const { dataFolder } = useStateStore();
 
-  useEffect(() => {
-    const temp = async () => {
-      const q = query(collection(db, "notes"), where("idNote", "==", item.id));
-      const tempArr: any = []
+  const fetchNotes = async () => {
+    try {
+      const q = query(collection(db, "notes"), where("idNote", "==", folderItem.id));
       const querySnapshot = await getDocs(q);
-      querySnapshot.forEach((doc) => {
-        tempArr.push({ ...doc.data(), id: doc.id })
-      });
-      setNotesInFolder(tempArr);
-    }
-    temp()
-  }, [])
+      const notesList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        title: '',
+        idNote: '',
+        content: '',
+        displayTitle: '',
+        createdAt: {
+          seconds: 0,
+          nanoseconds: 0
+        },
+        subtitle: '',
+        ...doc.data()
+      }));
 
-  const handleKeyDown = (e: any) => {
-    if (e.key === 'Enter') {
-      handleNewFolder();
+      setNotesInFolder(notesList);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
     }
   };
-
-  const handleNewFolder = () => {
-    setInputFolder('');
-    addFolder();
-  };
-  const addFolder = async () => {
-    await addDoc(collection(db, "notes"), {
-      idNote: item.id,
-      displayTitle: inputFolder,
-      title: "ini judul",
-      subtitle: "ini sub title",
-      content: "ini content",
-      createdAt: new Date(),
-    });
-    const q = query(collection(db, "notes"), where("idNote", "==", item.id));
-    const tempArr: any = []
-    const querySnapshot = await getDocs(q);
-    querySnapshot.forEach((doc) => {
-      tempArr.push({ ...doc.data(), id: doc.id })
-    });
-    setTriggerToast(true)
-    // in 2 second set to false
-    setTimeout(() => {
-      setTriggerToast(false)
-    }, 5000)
-    setNotesInFolder(tempArr);
-  };
+  useEffect(() => {
+    fetchNotes();
+  }, [dataFolder])
 
   return (
     <div
       className={`hover:bg-slate-100 transition-all p-2 rounded-md pr-4 pl-8`}
-      key={index}
     >
-      {triggerToast && <div className="toast toast-top toast-center">
-        <div className="alert alert-info text-white text-center font-semibold">
-          <span>successfully add new folder</span>
-        </div>
-      </div>}
       <div className='flex justify-between'>
-        <div className='opacity-50 font-medium'>{item.name}</div>
+        <div className='opacity-50 font-medium'>{folderItem.name}</div>
         <div className='flex gap-1'>
           <div className='w-4 h-4 relative'
-            onClick={() => (document.getElementById(`del_folder` + item.idNote + index) as HTMLDialogElement).showModal()}
+            onClick={() => (document.getElementById(`del_folder` + folderItem.id + folderItem.name) as HTMLDialogElement).showModal()}
           >
             <Image
               src={'./icons/trash.svg'}
@@ -160,28 +165,26 @@ function Folder({ item, index }: { item: any; index: number }) {
               fill
             />
           </div>
-          <dialog id={`del_folder` + item.idNote + index} className="modal">
+          <dialog id={`del_folder` + folderItem.id + folderItem.name} className="modal">
             <div className="modal-box">
               <h3 className="font-bold text-lg">Warning</h3>
-              <p className="py-4">Are you sure want to delete <b>{item.name}</b></p>
+              <p className="py-4">Are you sure want to delete <b>{folderItem.name}</b></p>
               <div className="modal-action">
                 <form method="dialog">
-                  {/* if there is a button in form, it will close the modal */}
                   <div className='flex gap-1'>
                     <button className="btn rounded-md btn-outline">
                       Cancel
                     </button>
                     <button className="btn btn-error rounded-md btn-outline"
                       onClick={async () => {
-                        await deleteDoc(doc(db, 'folders', item.id));
-                        // delete all notes in notes collection where idNote = item.id
-                        const q = query(collection(db, "notes"), where("idNote", "==", item.id));
+                        const q = query(collection(db, "notes"), where("idNote", "==", folderItem.id));
 
                         const querySnapshot = await getDocs(q);
                         querySnapshot.forEach((i) => {
                           deleteDoc(doc(db, "notes", i.id));
                         });
-
+                        await deleteDoc(doc(db, 'folders', folderItem.id));
+                        setIsAccordionOpened(false)
                       }}
                     >Delete</button>
                   </div>
@@ -204,7 +207,10 @@ function Folder({ item, index }: { item: any; index: number }) {
           </div>
           <div
             className='h-4 w-4 relative'
-            onClick={() => setIsAccordionOpened(!isAccordionOpened)}
+            onClick={() => {
+              fetchNotes()
+              setIsAccordionOpened(!isAccordionOpened)
+            }}
           >
             <Image
               src={'./icons/accordion.svg'}
@@ -216,27 +222,8 @@ function Folder({ item, index }: { item: any; index: number }) {
           </div>
         </div>
       </div>
-      <ContentFolders isAccordionOpened={isAccordionOpened} notesInFolder={notesInFolder} setNotesInFolder={setNotesInFolder} currentFolder={item.name} />
-      <div className={`${!isInputOpened && 'hidden'} relative`}>
-        <div className='absolute top-[10px] left-2 flex items-center pl-2 w-4 h-4 opacity-40'
-          onClick={handleNewFolder}
-        >
-          <Image
-            src={'./icons/plus.svg'}
-            alt='plus'
-            className='cursor-pointer'
-            fill
-          />
-        </div>
-        <input
-          type='text'
-          placeholder='New Folder'
-          className='border text-sm p-2 px-8'
-          onChange={(e) => setInputFolder(e.target.value)}
-          onKeyDown={handleKeyDown}
-          value={inputFolder}
-        />
-      </div>
+      <ContentFolders isAccordionOpened={isAccordionOpened} notesInFolder={notesInFolder} setNotesInFolder={setNotesInFolder} />
+      <InputNewFolder isInputOpened={isInputOpened} folderItem={folderItem} setNotesInFolder={setNotesInFolder} />
     </div>
   );
 }
@@ -245,42 +232,38 @@ const ContentFolders = ({
   isAccordionOpened,
   notesInFolder,
   setNotesInFolder,
-  currentFolder
 }: {
   isAccordionOpened: boolean;
-  notesInFolder: any;
+  notesInFolder: Note[];
   setNotesInFolder: any;
-  currentFolder: string;
 }) => {
   const {
     currentNote,
-    setIdContent,
     setCurrentNote,
-    setCurrentFolder,
-    setTitle,
-    setSubtitle,
-    setContent,
+    setCurrentFolder
   } = useContentStore();
   const [toggleEdit, setToggleEdit] = useState(-1)
   const [inputEditDisplay, setInputEditDisplay] = useState('')
 
   if (!isAccordionOpened) return <></>;
 
-  const handleClickNote = async (item: any) => {
+  const handleClickNote = async (item: Note) => {
     const docRef = doc(db, 'notes', item.id)
     const docSnap = await getDoc(docRef);
     const data = docSnap.data()
-    setCurrentFolder(currentFolder);
-    setCurrentNote(data ? data : {
-      displayTitle: '',
-      title: '',
-      subtitle: '',
-      content: '',
+    setCurrentNote({
+      ...currentNote,
+      ...data,
+      id: item.id,
     });
-    setIdContent(item.id);
-    setTitle(data?.title);
-    setSubtitle(data?.subtitle);
-    setContent(data?.content);
+
+    console.log('item', item)
+
+    // get folder by id
+    const ref = doc(db, 'folders', item.idNote);
+    const docSnapFolder = await getDoc(ref);
+    const dataFolder = docSnapFolder.data()
+    setCurrentFolder(dataFolder.name);
   }
 
   const handleDeleteNote = async (id: number) => {
@@ -290,12 +273,18 @@ const ContentFolders = ({
       console.log(error)
     }
     setCurrentNote({
+      id: '',
+      idNote: '',
       displayTitle: '',
       title: '',
       subtitle: '',
       content: '',
+      createdAt: {
+        seconds: 0,
+        nanoseconds: 0
+      }
     })
-    setNotesInFolder(notesInFolder.filter((item: any, index: number) => index !== id))
+    setNotesInFolder(notesInFolder.filter((item: Note, index: number) => index !== id))
   }
 
   const handleEditDisplayNote = async (id: string, index: number) => {
@@ -322,8 +311,7 @@ const ContentFolders = ({
 
   return (
     <div
-      className={`flex flex-col transition-all ${!isAccordionOpened && 'hidden'
-        }`}
+      className={`flex flex-col transition-all`}
     >
       {notesInFolder.length === 0 && (
         <div className='text-sm p-2 cursor-pointer hover:bg-slate-200'>
@@ -371,7 +359,6 @@ const ContentFolders = ({
                 <p className="py-4">Are you sure want to delete <b>{item.displayTitle}</b></p>
                 <div className="modal-action">
                   <form method="dialog">
-                    {/* if there is a button in form, it will close the modal */}
                     <div className='flex gap-1'>
                       <button className="btn rounded-md btn-outline">
                         Cancel
@@ -392,7 +379,95 @@ const ContentFolders = ({
   );
 };
 
-const InputNewPage = ({ isOpened }: { isOpened: boolean }) => {
+const InputNewFolder = ({
+  isInputOpened,
+  folderItem,
+  setNotesInFolder
+}: {
+  isInputOpened: boolean
+  folderItem: Folder
+  setNotesInFolder: any
+}) => {
+  const [inputFolder, setInputFolder] = useState('');
+  const [triggerToast, setTriggerToast] = useState(false)
+  const handleNewFolder = () => {
+    setInputFolder('');
+    addFolder();
+  };
+  const handleKeyDown = (e: any) => {
+    if (e.key === 'Enter') {
+      handleNewFolder();
+    }
+  };
+
+  const addFolder = async () => {
+    await addDoc(collection(db, "notes"), {
+      idNote: folderItem.id,
+      displayTitle: inputFolder,
+      title: inputFolder,
+      subtitle: `subtitle ` + inputFolder,
+      content: `content ` + inputFolder,
+      createdAt: new Date(),
+    });
+    const q = query(collection(db, "notes"), where("idNote", "==", folderItem.id));
+    const tempArr: Note[] = []
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((doc) => {
+      let i: Note = {
+        id: doc.id,
+        title: '',
+        idNote: '',
+        content: '',
+        displayTitle: '',
+        createdAt: {
+          seconds: 0,
+          nanoseconds: 0
+        },
+        subtitle: '',
+        ...doc.data()
+      }
+      tempArr.push(i)
+    });
+    setTriggerToast(true)
+    setTimeout(() => {
+      setTriggerToast(false)
+    }, 5000)
+    setNotesInFolder(tempArr);
+  };
+
+
+
+  return <>
+    {triggerToast && <div className="toast toast-top toast-center">
+      <div className="alert alert-info text-white text-center font-semibold">
+        <span>successfully add new folder</span>
+      </div>
+    </div>}
+    <div className={`${!isInputOpened && 'hidden'} relative`}>
+      <div className='absolute top-[10px] left-2 flex items-center pl-2 w-4 h-4 opacity-40'
+        onClick={handleNewFolder}
+      >
+        <Image
+          src={'./icons/plus.svg'}
+          alt='plus'
+          className='cursor-pointer'
+          fill
+        />
+      </div>
+      <input
+        type='text'
+        placeholder='New Folder'
+        className='border text-sm p-2 px-8'
+        onChange={(e) => setInputFolder(e.target.value)}
+        onKeyDown={handleKeyDown}
+        value={inputFolder}
+      />
+    </div>
+  </>
+}
+
+const InputNewPage = () => {
+  const { isSidebarOpen, dataFolder, setDataFolder } = useStateStore();
   const [inputValue, setInputValue] = useState('');
 
   const handleNewPage = () => {
@@ -410,9 +485,26 @@ const InputNewPage = ({ isOpened }: { isOpened: boolean }) => {
       name: inputValue,
       createdAt: new Date(),
     });
+    // refresh data
+    const q = query(collection(db, 'folders'));
+    const querySnapshot = await getDocs(q);
+    let folderData: Folder[] = [];
+    querySnapshot.forEach((doc) => {
+      let i: Folder = {
+        id: doc.id,
+        name: '',
+        createdAt: {
+          seconds: 0,
+          nanoseconds: 0
+        },
+        ...doc.data()
+      }
+      folderData.push(i);
+    });
+    // setDataFolder(folderData);
   };
   return (
-    <div className={`relative mx-8 ${!isOpened && 'hidden'}`}>
+    <div className={`relative mx-8 ${!isSidebarOpen && 'hidden'}`}>
       <div className='absolute top-[10px] left-2 flex items-center pl-2 w-4 h-4 opacity-40'>
         <Image
           src={'./icons/plus.svg'}
